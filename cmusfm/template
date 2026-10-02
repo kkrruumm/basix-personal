@@ -1,0 +1,15 @@
+pkg_name=cmusfm
+version=0.5.0
+revision=1
+build_style=gnu-configure
+short_desc="Last.fm scrobbler for cmus"
+home_page="https://github.com/Arkq/cmusfm"
+license="GPL-3.0-or-later"
+dist_files="https://github.com/Arkq/cmusfm/archive/v${version}.tar.gz"
+checksum="9ecdaf52a2d6574b18c3de0da382e4d2e4c72cae8e3cc01a2273f35b9cae712c"
+
+make_depends="autoconf automake curl"
+
+pre_configure() {
+    autoreconf -fi
+}

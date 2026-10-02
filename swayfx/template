@@ -1,0 +1,35 @@
+pkg_name=swayfx
+version=0.6
+revision=1
+build_style=meson
+short_desc="Sway, but with eye candy"
+home_page="https://github.com/wlrfx/swayfx"
+license="MIT"
+dist_files="https://github.com/wlrfx/swayfx/archive/refs/tags/${version}.tar.gz>swayfx-${version}.tar.gz"
+checksum="4b38341cd1e3e970ab800bd1bdc6462ef295efa35c9ad87c9b615087d41e52f4"
+wrk_src="swayfx-$version"
+
+use_flags="man swaybar swaynag tray -wallpapers pixbuf"
+
+depends="cairo dejavu-fonts-ttf json-c libdrm libevdev libinput libudev-zero
+ libxkbcommon pango pcre2 pixman scenefx wlroots
+ $(use_if pixbuf gdk-pixbuf)
+ $(use_if tray basu)"
+make_depends="cairo json-c libdrm libevdev libinput libudev-zero libxkbcommon meson
+ pango pcre2 pixman pkgconf scenefx wayland-protocols wlroots xorgproto
+ $(use_if man scdoc)
+ $(use_if pixbuf gdk-pixbuf)
+ $(use_if tray basu)"
+
+configure_args="
+    -Dwerror=false
+    -Dzsh-completions=false
+    -Dfish-completions=false
+    -Dbash-completions=false
+    $(use_if wallpapers -Ddefault-wallpaper=true -Ddefault-wallpaper=false)
+    $(use_if pixbuf -Dgdk-pixbuf=enabled -Dgdk-pixbuf=disabled)
+    $(use_if swaybar -Dswaybar=true -Dswaybar=false)
+    $(use_if swaynag -Dswaynag=true -Dswaynag=false)
+    $(use_if man -Dman-pages=enabled -Dman-pages=disabled)
+    $(use_if tray -Dtray=enabled -Dtray=disabled)
+    $(use_if tray -Dsd-bus-provider=basu -Dsd-bus-provider=auto)"

@@ -1,0 +1,82 @@
+--- a/src/detection/packages/packages.h
++++ b/src/detection/packages/packages.h
+@@ -8,6 +8,7 @@
+     uint32_t amUser;
+     uint32_t apk;
+     uint32_t appimage;
++    uint32_t bpm;
+     uint32_t brew;
+     uint32_t brewCask;
+     uint32_t cards;
+--- a/src/detection/packages/packages_linux.c
++++ b/src/detection/packages/packages_linux.c
+@@ -502,6 +502,9 @@
+     if (FF_PACKAGES_IS_ENABLED(options, FLATPAK)) {
+         packageCounts->flatpakSystem += getFlatpakPackages(baseDir, "/var/lib");
+     }
++    if (FF_PACKAGES_IS_ENABLED(options, BPM)) {
++        packageCounts->bpm += getNumElements(baseDir, "/var/db/bpm/installed", true);
++    }
+     if (FF_PACKAGES_IS_ENABLED(options, KISS)) {
+         packageCounts->kiss += getNumElements(baseDir, "/var/db/kiss/installed", true);
+     }
+--- a/src/modules/packages/option.h
++++ b/src/modules/packages/option.h
+@@ -41,6 +41,7 @@
+     FF_PACKAGES_FLAG_CARDS_BIT = UINT64_C(1) << 34U,
+     FF_PACKAGES_FLAG_PORG_BIT = UINT64_C(1) << 35U,
+     FF_PACKAGES_FLAG_INSTALLRELEASE_BIT = UINT64_C(1) << 36U,
++    FF_PACKAGES_FLAG_BPM_BIT = UINT64_C(1) << 37U,
+ } FFPackagesFlags;
+ static_assert(sizeof(FFPackagesFlags) == sizeof(uint64_t), "");
+ 
+--- a/src/modules/packages/packages.c
++++ b/src/modules/packages/packages.c
+@@ -90,6 +90,7 @@
+             FF_PRINT_PACKAGE_NAME(hpkgSystem, "hpkg")
+         }
+         FF_PRINT_PACKAGE_NAME(installrelease, "install-release")
++        FF_PRINT_PACKAGE(bpm)
+         FF_PRINT_PACKAGE(kiss)
+         FF_PRINT_PACKAGE(linglong)
+         FF_PRINT_PACKAGE(lpkg)
+@@ -165,6 +166,7 @@
+                 FF_ARG(counts.hpkgSystem, "hpkg-system"),
+                 FF_ARG(counts.hpkgUser, "hpkg-user"),
+                 FF_ARG(counts.installrelease, "install-release"),
++                FF_ARG(counts.bpm, "bpm"),
+                 FF_ARG(counts.kiss, "kiss"),
+                 FF_ARG(counts.linglong, "linglong"),
+                 FF_ARG(counts.lpkg, "lpkg"),
+@@ -250,6 +252,7 @@
+                         case 'B':
+                             if (false)
+                                 ;
++                            FF_TEST_PACKAGE_NAME(BPM)
+                             FF_TEST_PACKAGE_NAME(BREW)
+                             break;
+                         case 'C':
+@@ -387,6 +390,7 @@
+     FF_TEST_PACKAGE_NAME(AM)
+     FF_TEST_PACKAGE_NAME(APK)
+     FF_TEST_PACKAGE_NAME(APPIMAGE)
++    FF_TEST_PACKAGE_NAME(BPM)
+     FF_TEST_PACKAGE_NAME(BREW)
+     FF_TEST_PACKAGE_NAME(CARDS)
+     FF_TEST_PACKAGE_NAME(CHOCO)
+@@ -462,6 +466,7 @@
+     FF_APPEND_PACKAGE_COUNT(hpkgSystem)
+     FF_APPEND_PACKAGE_COUNT(hpkgUser)
+     FF_APPEND_PACKAGE_COUNT(installrelease)
++    FF_APPEND_PACKAGE_COUNT(bpm)
+     FF_APPEND_PACKAGE_COUNT(kiss)
+     FF_APPEND_PACKAGE_COUNT(linglong)
+     FF_APPEND_PACKAGE_COUNT(lpkg)
+@@ -560,6 +565,7 @@
+         { "Number of hpkg-system packages", "hpkg-system" },
+         { "Number of hpkg-user packages", "hpkg-user" },
+         { "Number of install-release packages", "install-release" },
++        { "Number of bpm packages", "bpm" },
+         { "Number of kiss packages", "kiss" },
+         { "Number of linglong packages", "linglong" },
+         { "Number of lpkg packages", "lpkg" },

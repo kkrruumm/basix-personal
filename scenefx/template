@@ -1,0 +1,25 @@
+pkg_name=scenefx
+version=0.5
+revision=1
+build_style=meson
+short_desc="Drop-in replacement for the wlroots scene API with eye candy effects"
+home_page="https://github.com/wlrfx/scenefx"
+license="MIT"
+dist_files="https://github.com/wlrfx/scenefx/archive/refs/tags/${version}.tar.gz>scenefx-${version}.tar.gz"
+checksum="553e9cebdd4f11fac7aab39bce60adeed0ae3e7f0b970ea4f3380e190ffb44fa"
+wrk_src="scenefx-$version"
+
+use_flags="lcms2"
+
+depends="libdrm libxkbcommon mesa pixman wayland wlroots
+ $(use_if lcms2 lcms2)"
+make_depends="libdrm libxkbcommon mesa meson pixman pkgconf wayland
+ wayland-protocols wlroots xorgproto
+ $(use_if lcms2 lcms2)"
+
+configure_args="
+    -Dwerror=false
+    -Dexamples=false
+    -Drenderers=gles2
+    -Dtracy_enable=false
+    $(use_if lcms2 -Dcolor-management=enabled -Dcolor-management=disabled)"

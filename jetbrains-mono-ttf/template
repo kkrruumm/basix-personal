@@ -1,0 +1,22 @@
+pkg_name=jetbrains-mono-ttf
+version=2.304
+revision=1
+build_style=custom
+short_desc="Typeface for developers by JetBrains"
+home_page="https://www.jetbrains.com/lp/mono/"
+license="OFL-1.1"
+dist_files="https://github.com/JetBrains/JetBrainsMono/releases/download/v${version}/JetBrainsMono-${version}.zip"
+checksum="ed542000a6e1fb8f25dd3023014d41f4ceefadb17e2ce32654adeca52ba6a771"
+
+depends="fontconfig"
+
+create_wrk_src=yes
+
+do_build() { :; }
+
+do_install() {
+    bmkdir /usr/share/fonts/jetbrains-mono
+    for _f in fonts/ttf/*.ttf; do
+        binstall "$_f" 0644 /usr/share/fonts/jetbrains-mono
+    done
+}
