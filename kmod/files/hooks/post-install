@@ -1,0 +1,18 @@
+#!/bin/sh
+# args: <pkg_name> <root>
+# regenerate kmods binary module indexes for any kernel that doesn't have
+# them, which is any kernel whose modules_install ran busybox depmod
+r=${2%/}
+[ -x "$r/usr/bin/depmod" ] || exit 0
+
+for d in "$r"/usr/lib/modules/*/; do
+    [ -d "${d}kernel" ] || continue
+    [ -f "${d}modules.dep.bin" ] && continue
+    k=${d%/}; k=${k##*/}
+    if [ -n "$r" ]; then
+        "$r/usr/bin/depmod" -b "$r" -a "$k" || :
+    else
+        depmod -a "$k" || :
+    fi
+done
+exit 0

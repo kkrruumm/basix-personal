@@ -1,0 +1,20 @@
+fixes the following error on armhf:
+
+    ../src/ps/global.c:179:17: error: redefinition of 'cached_euid' with a different type: 'unsigned int' vs 'int'
+      179 | unsigned        cached_euid = 0xffffffff;
+          |                 ^
+    ../src/ps/common.h:450:24: note: previous declaration is here
+      450 | extern uid_t           cached_euid;
+          |                        ^
+
+--- a/src/ps/global.c
++++ b/src/ps/global.c
+@@ -176,7 +176,7 @@
+ const char     *bsd_v_format = (const char *)0xdeadbeef;
+ int             bsd_c_option = -1;
+ int             bsd_e_option = -1;
+-unsigned        cached_euid = 0xffffffff;
++uid_t           cached_euid = -1;
+ int             cached_tty = -1;
+ char            forest_prefix[4 * 32*1024 + 100];     // FIXME
+ int             forest_type = -1;

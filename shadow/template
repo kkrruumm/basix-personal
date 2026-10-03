@@ -1,0 +1,76 @@
+pkg_name=shadow
+version=4.20.3
+revision=1
+build_style=gnu-configure
+short_desc="Shadow password file utilities"
+home_page="https://github.com/shadow-maint/shadow"
+license="BSD-3-Clause"
+dist_files="https://github.com/shadow-maint/shadow/releases/download/${version}/shadow-${version}.tar.xz"
+checksum="5332f68292b20e68a9fbc48367dbc1254386eb6ac670a1b9614d205a8d4920bb"
+
+# pam: auth through linux-pams base-* stack
+#   without pam, shadow reads /etc/shadow itself and login.defs/login.access/limits take over
+# acl: carry ACLs and xattrs over when useradd/usermod copy home dirs
+# subuids: newuidmap/newgidmap (setuid), getsubids and libsubid, for rootless containers and whatnot
+# su: build su(1)
+use_flags="man pam acl subids su -nls"
+
+depends="
+ $(use_if pam linux-pam)
+ $(use_if acl acl)"
+make_depends="linux-headers
+ $(use_if pam linux-pam)
+ $(use_if acl "acl attr")
+ $(use_if nls gettext-tiny)"
+
+# yescrypt is off because musls crypt cant do it, bcrypt and sha* it can
+# lastlog is off because musl doesnt have a real utmp/lastlog
+# logind is off for obvious reasons
+configure_args="
+    --enable-shared
+    --disable-static
+    --enable-shadowgrp
+    --disable-lastlog
+    --disable-logind
+    --without-libbsd
+    --without-audit
+    --without-selinux
+    --without-btrfs
+    --without-tcb
+    --without-skey
+    --without-nscd
+    --without-sssd
+    --with-bcrypt
+    --without-yescrypt
+    $(use_if subids --enable-subordinate-ids --disable-subordinate-ids)
+    $(use_with pam libpam)
+    $(use_with acl)
+    $(use_with su)
+    $(use_enable nls)"
+
+pre_configure() {
+    # without this login.defs leaves the hash to whatever shadow defaults to
+    # which ends up being DES for chpasswd/newusers without pam
+    bsed 's/^#ENCRYPT_METHOD SHA512$/ENCRYPT_METHOD SHA512/' etc/login.defs
+}
+
+post_install() {
+    # the existing pam.d files want a system-auth that isn't a thing here
+    # login and su come from linux-pam as is, everything else just
+    # gets a file pointing at the base-* shit
+    brm /etc/pam.d
+    if use pam; then
+        for p in passwd chfn chsh chage chpasswd chgpasswd newusers \
+                 useradd userdel usermod groupadd groupdel groupmod groupmems; do
+            binstall "$FILESDIR/shadow.pam" 0644 /etc/pam.d "$p"
+        done
+    fi
+
+    # the prebuilt man pages only get installed when regenerating them
+    # from docbook, which pulls in the whole xsl toolchain
+    if use man; then
+        $make_cmd -C man DESTDIR="$DESTDIR" install-man
+    fi
+
+    blicense COPYING
+}

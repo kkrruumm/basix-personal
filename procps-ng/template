@@ -1,0 +1,46 @@
+pkg_name=procps-ng
+version=4.0.7
+revision=1
+build_style=gnu-configure
+short_desc="Utilities for monitoring your system and its processes"
+home_page="https://gitlab.com/procps-ng/procps"
+license="GPL-2.0-or-later, LGPL-2.1-or-later"
+dist_files="https://downloads.sourceforge.net/project/procps-ng/Production/procps-ng-${version}.tar.xz"
+checksum="ff58037febb3a2f892813142a6d0dd9106d0092a88cb19df1447344042eab908"
+
+# ncurses: top, watch, slabtop, tload and hugetop, without it only the
+#   non-interactive tools get built
+# pidof: off if you'd rather keep another pidof
+# w: lists logged in users from utmp, which musl doesn't really keep, so
+#   it only ever shows the uptime header, off by default
+# kill: chimerautils and util-linux both have one already, off by default
+use_flags="man ncurses pidof -w -kill -nls"
+
+depends="$(use_if ncurses ncurses)"
+make_depends="pkgconf
+ $(use_if ncurses ncurses)
+ $(use_if nls gettext-tiny)"
+
+configure_args="
+    --disable-static
+    --disable-rpath
+    --disable-modern-top
+    --disable-skill
+    --disable-examples
+    --without-systemd
+    --without-elogind
+    --disable-libselinux
+    $(use_with ncurses)
+    $(use_if ncurses --enable-watch8bit --disable-watch8bit)
+    $(use_enable pidof)
+    $(use_enable w)
+    $(use_enable kill)
+    $(use_enable nls)"
+
+post_install() {
+    use man || brm /usr/share/man
+    brm /usr/share/doc
+
+    blicense COPYING
+    blicense COPYING.LIB
+}

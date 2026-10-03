@@ -1,0 +1,8 @@
+# PAM configuration for the shadow tools, login and su live in linux-pam
+# root goes straight through, everything else hits the normal base-* stack
+
+auth      sufficient pam_rootok.so
+auth      include    base-auth
+account   include    base-account
+password  include    base-password
+session   include    base-session-noninteractive

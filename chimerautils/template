@@ -1,0 +1,86 @@
+pkg_name=chimerautils
+version=15.1.1
+revision=1
+build_style=meson
+short_desc="Chimera Linux core userland, ported from FreeBSD"
+home_page="https://github.com/chimera-linux/chimerautils"
+license="BSD-2-Clause, BSD-3-Clause"
+dist_files="https://github.com/chimera-linux/chimerautils/archive/refs/tags/v${version}.tar.gz>chimerautils-${version}.tar.gz"
+checksum="b799b533fcefc5b966e94fe0ef77825a4479d3211fd706c1972916c9508ad019"
+
+# ssl: libcrypto/libssl for install, sort -R, md5/sha*sum, fetch, mcookie
+# zlib: gzip isnt built at all with this, lzma/bzip/zstd are extra gzip formats
+# libedit: line editing and history in sh(1)
+# extra: the stuff chimera splits into chimerautils-extra (vi, ee, telnet, fetch
+#   nc, tip/cu, m4, patch, locate, cal/calendar, indent, compress, gencat)
+# tiny: also build reduced ls/sort/sh into /usr/libexec/chimerautils/tiny
+# lib: install libchimerautils along with fts/libfts and rpmatch/librpmatch
+#      these are the same files shipped by musl-fts so this is off by default
+use_flags="man ssl zlib lzma bzip2 zstd libedit extra -tiny -lib"
+
+depends="acl libxo ncurses
+ $(use_if ssl libressl)
+ $(use_if zlib zlib)
+ $(use_if lzma xz)
+ $(use_if bzip2 bzip2)
+ $(use_if zstd zstd)
+ $(use_if libedit libedit)"
+
+make_depends="meson pkgconf flex bison linux-headers bsd-compat-headers
+ acl attr libxo ncurses
+ $(use_if ssl libressl)
+ $(use_if zlib zlib)
+ $(use_if lzma xz)
+ $(use_if bzip2 bzip2)
+ $(use_if zstd zstd)
+ $(use_if libedit libedit)"
+
+# chimerautils su(1) is still experimental so just hard disabling pam here
+# shadow should be the provider of `su` with this package
+configure_args="
+    --sbindir=bin
+    --libexecdir=/usr/libexec/chimerautils
+    -Dchimera_realpath=enabled
+    -Dcolor_ls=true
+    -Dpam=disabled
+    -Dselinux=disabled
+    $(use_if ssl -Dopenssl=enabled -Dopenssl=disabled)
+    $(use_if zlib -Dzlib=enabled -Dzlib=disabled)
+    $(use_if lzma -Dlzma=enabled -Dlzma=disabled)
+    $(use_if bzip2 -Dbzip2=enabled -Dbzip2=disabled)
+    $(use_if zstd -Dzstd=enabled -Dzstd=disabled)
+    $(use_if libedit -Dlibedit=enabled -Dlibedit=disabled)
+    $(use_if tiny -Dtiny=enabled -Dtiny=disabled)
+    -Dinstall-lib=$(use_if lib true false)"
+
+post_install() {
+    # zless needs less(1), just delete it for now
+    brm /usr/bin/zless /usr/share/man/man1/zless.1
+
+    if use tiny; then
+        for f in "$DESTDIR"/usr/bin/*.tiny; do
+            [ -f "$f" ] || continue
+            _t=${f##*/}
+            bmove "/usr/bin/$_t" "/usr/libexec/chimerautils/tiny/${_t%.tiny}"
+        done
+    fi
+
+    if ! use extra; then
+        for c in calendar cal ncal compress uncompress cu tip ee ex vi view \
+                 nex nvi nview fetch gencat indent m4 nc patch telnet; do
+            brm "/usr/bin/$c" "/usr/share/man/man1/$c.1"
+        done
+        rm -f "$DESTDIR"/usr/bin/locate* \
+              "$DESTDIR"/usr/share/man/man1/locate*.1 \
+              "$DESTDIR"/usr/libexec/chimerautils/locate.*
+        brm /usr/share/man/man5/remote.5 /usr/share/man/man8/locate.updatedb.8 \
+            /usr/share/man/man8/updatedb.8 \
+            /etc/locate.rc /etc/phones /etc/remote /usr/share/vi
+        rmdir "$DESTDIR/usr/libexec/chimerautils" "$DESTDIR/etc" 2>/dev/null || :
+    fi
+
+    use man || brm /usr/share/man
+
+    blicense LICENSE
+    blicense COPYRIGHT
+}

@@ -1,0 +1,16 @@
+#!/bin/sh
+# args: <pkg_name> <root>
+# indexes the post-install hook generated aren't in any manifest, so once
+# the kernel they were made for is gone, they and the directory get cleaned
+# up here
+#
+# modules_install always creates kernel/, so a module dir without it no
+# longer belongs to an installed kernel
+r=${2%/}
+for d in "$r"/usr/lib/modules/*/; do
+    [ -d "$d" ] || continue
+    [ -d "${d}kernel" ] && continue
+    rm -f "$d"modules.*
+    rmdir "$d" 2>/dev/null || :
+done
+exit 0

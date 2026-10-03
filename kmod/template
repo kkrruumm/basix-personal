@@ -1,0 +1,63 @@
+pkg_name=kmod
+version=34.2
+revision=1
+build_style=meson
+short_desc="Linux kernel module management tools and library"
+home_page="https://github.com/kmod-project/kmod"
+license="LGPL-2.1-or-later, GPL-2.0-or-later"
+dist_files="https://www.kernel.org/pub/linux/utils/kernel/kmod/kmod-${version}.tar.xz"
+checksum="1ed540d5aea74cde8dfccf9d3737dfb0cd5c021bbafda77b6902ba07f5642312"
+
+# zstd/xz/zlib: compressed modules
+# ssl: show PKCS#7 module signature details in modinfo, loading signed modules works without it
+use_flags="man zstd xz zlib ssl -completions"
+
+depends="
+ $(use_if zstd zstd)
+ $(use_if xz xz)
+ $(use_if zlib zlib)
+ $(use_if ssl libressl)"
+make_depends="meson pkgconf linux-headers
+ $(use_if man scdoc)
+ $(use_if zstd zstd)
+ $(use_if xz xz)
+ $(use_if zlib zlib)
+ $(use_if ssl libressl)"
+
+configure_args="
+    -Dsbindir=bin
+    -Ddistconfdir=/usr/lib
+    -Dmoduledir=/lib/modules
+    -Dlogging=true
+    -Dbuild-tests=false
+    -Ddocs=false
+    $(use_bool man manpages)
+    $(use_if zstd -Dzstd=enabled -Dzstd=disabled)
+    $(use_if xz -Dxz=enabled -Dxz=disabled)
+    $(use_if zlib -Dzlib=enabled -Dzlib=disabled)
+    $(use_if ssl -Dopenssl=enabled -Dopenssl=disabled)
+    $(use_if completions -Dbashcompletiondir=/usr/share/bash-completion/completions -Dbashcompletiondir=no)
+    $(use_if completions -Dzshcompletiondir=/usr/share/zsh/site-functions -Dzshcompletiondir=no)
+    $(use_if completions -Dfishcompletiondir=/usr/share/fish/vendor_functions.d -Dfishcompletiondir=no)"
+
+pre_configure() {
+    # the tool symlinks get made with 'ln -sfr' which not every ln has
+    bsed 's|ln -sfr "$DESTDIR@0@/kmod" "$DESTDIR@1@"|ln -sf kmod "$DESTDIR@1@"|' meson.build
+
+    # the manpage wrapper is bash for no good reason (as per usual)
+    cat > scripts/build-scdoc.sh <<'EOF'
+#!/bin/sh
+set -eu
+sed -e "$3" "$2" | "$1"
+EOF
+
+    chmod 0755 scripts/build-scdoc.sh
+}
+
+post_install() {
+    # the hooks keep the binary indexes around for kernels that come and go
+    binstall "$FILESDIR/hooks/post-install" 0755 /etc/bpm/hooks/post-install 10-depmod
+    binstall "$FILESDIR/hooks/post-remove" 0755 /etc/bpm/hooks/post-remove 10-depmod
+
+    blicense COPYING
+}
